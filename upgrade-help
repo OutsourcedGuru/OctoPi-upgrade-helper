@@ -1,0 +1,166 @@
+#!/bin/sh
+
+if [ $# -lt 1 ]
+then
+        echo "Usage: ~/scripts/upgrade-help backup | restore"
+        exit 1
+fi
+
+if [ "$1" = "backup" ]
+then
+        tput bold; echo "This script will STOP the OctoPrint service, generate a list of the current set"; tput sgr0
+        tput bold; echo "of plugins--overwriting the previous list--and create a tarball with instructions."; tput sgr0
+        echo ""
+        echo -n "Continue (y/n)? "
+        old_stty_cfg=$(stty -g)
+        stty raw -echo
+        answer=$( while ! head -c 1 | grep -i '[ny]' ;do true ;done )
+        stty $old_stty_cfg
+        if echo "$answer" | grep -iq "^n" ;then
+                echo "\nOkay, bye!"
+                exit;
+        fi
+        echo ""
+        echo "First, we need to stop OctoPrint so that everything can be backed up:"
+        sudo service octoprint stop
+        echo "The OctoPrint service should now be stopped."
+        echo ""
+        echo "Next, we need to create a list of your currently-running plugins for later reference:"
+        cat ~/.octoprint/logs/octoprint.log |grep "|" | grep "= /home/pi/" | sort | uniq | sed 's|\|||g'> ~/.octoprint/current-plugins.txt
+        ls -l ~/.octoprint/current-plugins.txt
+        echo ""
+        echo "Deleting the previous backup on the Raspi if it exists:"
+        rm ~/dot_octoprint.tar.gz 2> /dev/null
+        echo "Next, we create a tarball of the ~/.octoprint folder in the home directory (several minutes):"
+        tar --atime-preserve=replace -zcvf ~/dot_octoprint.tar.gz ~/.octoprint > /dev/null 2>&1 &
+        # This interesting bit will create an animated spinner to indicate progress
+        pid=$!
+        i=1
+        sp="/-\|"
+        echo -n ' '
+        while kill -0 $pid 2>/dev/null
+        do
+                printf '\b%.1s' "$sp"
+                sp=${sp#?}${sp%???}
+                sleep 0.1
+        done
+        printf '\b'
+        # End of animation
+        ls -l ~/dot_octoprint.tar.gz
+        echo ""
+        echo "Now that we have a tarball, run the following command FROM YOUR WORKSTATION to download it:"
+        tput bold; echo "scp pi@octopi.local:~/dot_octoprint.tar.gz ~/."; tput sgr0
+        echo ""
+        echo "Since you'll need this script in a moment to restore things back, download it as well from your workstation:"
+        tput bold; echo "scp pi@octopi.local:~/scripts/upgrade-help ~/."; tput sgr0
+        echo ""
+        echo "It's handy to have a copy of your /boot/octopi-wpa-supplicant.txt file, so download this, too:"
+        tput bold; echo "scp pi@octopi.local:/boot/octopi-wpa-supplicant.txt ~/."; tput sgr0
+        echo ""
+        echo "Optionally, if you made changes to /boot/octopi.txt for your webcam, download a copy:"
+        tput bold; echo "scp pi@octopi.local:/boot/octopi.txt ~/."; tput sgr0
+        echo ""
+        echo "Optionally, if you made changes to /boot/config.txt for a TFT screen, download a copy:"
+        tput bold; echo "scp pi@octopi.local:/boot/config.txt ~/."; tput sgr0
+        echo ""
+        echo "Review these next steps in their entirety before overcopying your microSD card:"
+        echo "(It might be a good idea to screencap this or otherwise copy/paste for your reference.)"
+        echo ""
+        echo " 1. Download and burn the latest OctoPi image to your microSD card (or even a new card)"
+        echo " 2. Mount the newly-burned card on your workstation so that you can see the /boot partition"
+        echo " 3. As necessary, edit the /boot/config.txt if you have a TFT attached to your Raspi."
+        echo "    You should review your current changes before burning a new image over your existing one."
+        echo " 4. As necessary, edit the /boot/octopi.txt if you have made changes, say, due to webcam"
+        echo "    settings you had to adjust."
+        echo " 5. Overcopy the /boot/octopi-wpa-supplicant.txt file and verify that it is correct"
+        echo " 6. Eject the microSD, return it to the Raspi and boot it"
+        echo " 7. Note that the hostname will default back to octopi and the user setup will also default" 
+        echo " 8. Run the following later from your workstation to upload this script back to the Raspi"
+        echo "    so that you may continue:"
+        tput bold; echo "scp ~/upgrade-help pi@octopi.local:~/scripts/."; tput sgr0
+        echo ""
+        echo " 9. Run the following to upload the tarball from your workstation:"
+        tput bold; echo "scp ~/dot_octoprint.tar.gz pi@octopi.local:~/."; tput sgr0
+        echo ""
+        echo "10. (Almost) finally, remote into the Raspi and continue the restoral by running the"
+        echo "    script again like this FROM THE RASPI:"
+        tput bold; echo "~/scripts/upgrade-help restore"; tput sgr0
+        echo ""
+        echo "If you need OctoPrint running again, execute the following:"
+        echo sudo service octoprint start
+        echo ""
+fi
+
+if [ "$1" = "restore" ]
+then
+        tput bold; echo "This script will STOP the OctoPrint service, provide instructions for uploading your"; tput sgr0
+        tput bold; echo "previous backup and then ask you again if you would like to proceed."; tput sgr0
+        echo ""
+        echo -n "Continue (y/n)? "
+        old_stty_cfg=$(stty -g)
+        stty raw -echo
+        answer=$( while ! head -c 1 | grep -i '[ny]' ;do true ;done )
+        stty $old_stty_cfg
+        if echo "$answer" | grep -iq "^n" ;then
+                echo "\nOkay, bye!"
+                exit;
+        fi
+        echo ""
+        echo "First, we need to stop OctoPrint so that everything can be updated":
+        sudo service octoprint stop
+        echo "The OctoPrint service should now be stopped."
+        echo ""
+        echo "Next, (if you haven't uploaded the tarball back to the Raspi yet), run the following"
+        echo "command from your workstation to upload the backup created earlier:"
+        tput bold; echo "scp ~/dot_octoprint.tar.gz pi@octopi.local:~/."; tput sgr0
+        echo ""
+        echo "You should see a backup file here:"
+        echo ""
+        echo "Previously-uploaded backup:"
+        echo "------------------------------------"
+        ls -l ~/dot_octoprint.tar.gz
+        echo "------------------------------------"
+        echo ""
+        tput bold; echo "If you did not see a file listed above, then you should not continue past"
+        echo "this point."; tput sgr0
+        echo ""
+        echo "This next step is potentially dangerous if you did not follow the earlier"
+        echo "instructions. You should have earlier run a remote scp command to download"
+        echo "and now to upload it back to your Raspberry Pi."
+        echo ""
+        echo -n "Are you sure you want to delete the existing ~/.octoprint folder structure (y/n)? "
+        old_stty_cfg=$(stty -g)
+        stty raw -echo
+        answer=$( while ! head -c 1 | grep -i '[ny]' ;do true ;done )
+        stty $old_stty_cfg
+        if echo "$answer" | grep -iq "^n" ;then
+                echo "\nOkay, bye!"
+                echo ""
+                echo "If you need OctoPrint running again, execute the following:"
+                echo sudo service octoprint start
+                echo ""
+                exit;
+        fi
+        echo ""
+        cd ~
+        echo "Removing ~/.octoprint..."
+        rm -rf ~/.octoprint
+        echo ""
+        echo "Restoring ~/.octoprint..."
+        tar -zxvf ~/dot_octoprint.tar.gz
+        ls -al ~|grep "\.octoprint"
+        echo ""
+        echo "Now restarting the OctoPrint service..."
+        sudo service octoprint start
+        echo ""
+        echo "In about a minute you should now be able to open up OctoPrint in your browser"
+        echo "and log back in just like before\; however, your plugins are still missing. Go to"
+        echo "Settings > Plugin Manager > Get More... and install the plugins that are seen here:"
+        echo ""
+        echo "Previously-added plugins:"
+        echo "------------------------------------"
+        cat ~/.octoprint/current-plugins.txt | grep -v bundled
+        echo "------------------------------------"
+        echo ""
+fi
+
