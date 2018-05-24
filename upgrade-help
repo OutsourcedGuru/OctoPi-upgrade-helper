@@ -147,7 +147,7 @@ then
         rm -rf ~/.octoprint
         echo ""
         echo "Restoring ~/.octoprint..."
-        tar -zxvf ~/dot_octoprint.tar.gz
+        tar -zxvf ~/dot_octoprint.tar.gz -C /
         ls -al ~|grep "\.octoprint"
         echo ""
         echo "Now restarting the OctoPrint service..."

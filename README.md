@@ -36,3 +36,4 @@ The instructions here are enough to get that script onto your Raspberry Pi compu
 * You'll still need to run `sudo raspi-config` on the new image burned to adjust the timezone minimally as well as anything else you've changed in the past.
 * This script makes no attempt to assist you if you've turned on access control and have created additional users. You will need to recreate those so it's a good idea to create a checklist before proceeding in this case.
 * This script will not save the entire collection of wifi zones/passwords only the first. If you take your printer to other venues and you've introduced it to other wifi zones, then make sure to create a checklist of those.
+* Given that the `~/.octoprint/config.yaml` is backed up, any settings you have made in your plugins will be preserved; you'll just need to re-install them however
