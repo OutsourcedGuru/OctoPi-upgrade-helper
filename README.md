@@ -37,3 +37,8 @@ The instructions here are enough to get that script onto your Raspberry Pi compu
 * This script makes no attempt to assist you if you've turned on access control and have created additional users. You will need to recreate those so it's a good idea to create a checklist before proceeding in this case.
 * This script will not save the entire collection of wifi zones/passwords only the first. If you take your printer to other venues and you've introduced it to other wifi zones, then make sure to create a checklist of those.
 * Given that the `~/.octoprint/config.yaml` is backed up, any settings you have made in your plugins will be preserved; you'll just need to re-install them however
+
+|Donate||Cryptocurrency|
+|:-----:|---|:--------:|
+| ![eth-receive](https://user-images.githubusercontent.com/15971213/40564950-932d4d10-601f-11e8-90f0-459f8b32f01c.png) || ![btc-receive](https://user-images.githubusercontent.com/15971213/40564971-a2826002-601f-11e8-8d5e-eeb35ab53300.png) |
+|Ethereum||Bitcoin|
